@@ -1,4 +1,7 @@
 top = expr
+    | val
+    | mut
+    | def
     ;
 
 expr = prefix-op primary
@@ -8,9 +11,6 @@ expr = prefix-op primary
 
 primary = "(" expr ")"
         | block
-        | val
-        | mut
-        | def
         | id
         | num
         | str

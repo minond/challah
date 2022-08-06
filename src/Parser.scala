@@ -24,13 +24,7 @@ def parse(tokens: TokenStream, project: Project): Either[Err, List[Expr]] =
     .map { (curr) => parseTop(curr, tokens, project) }
     .squished
 
-def parseTop(curr: Token, tokens: TokenStream, project: Project) =
-  parseExpr(curr, tokens, project)
-
-def parseExpr(curr: Token, tokens: TokenStream, project: Project) =
-  parsePrimary(curr, tokens, project)
-
-def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[Err, Expr] = curr match
+def parseTop(curr: Token, tokens: TokenStream, project: Project) = curr match
   case Id("val", _) =>
     for
       name  <- parseId(tokens.next, tokens, project)
@@ -38,16 +32,23 @@ def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[Err
       value <- parseExpr(tokens.next, tokens, project)
     yield
       Val(name, value)
-  case _: Id => parseId(curr, tokens, project)
-  case num: Num =>
-    Right(num)
-  case _ =>
-    println(curr)
-    ???
+  case _ => parseExpr(curr, tokens, project)
+
+def parseExpr(curr: Token, tokens: TokenStream, project: Project) =
+  parsePrimary(curr, tokens, project)
+
+def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[Err, Expr] = curr match
+  case _: Id  => parseId(curr, tokens, project)
+  case _: Num => parseNumber(curr, tokens, project)
+  case _      => ???
 
 def parseId(curr: Token, tokens: TokenStream, project: Project): Either[Err, Id] = curr match
   case id: Id => Right(id)
   case bad => Left(UnexpectedToken[Id](curr))
+
+def parseNumber(curr: Token, tokens: TokenStream, project: Project): Either[Err, Num] = curr match
+  case num: Num => Right(num)
+  case bad => Left(UnexpectedToken[Num](curr))
 
 def eat[Expected: ClassTag](tokens: TokenStream, source: Source): Either[Err, Expected] = tokens.headOption match
   case Some(token: Expected) =>
