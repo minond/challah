@@ -83,6 +83,9 @@ def nextToken(char: Char, offset: Int, stream: CharStream, source: Source): Eith
   case '=' =>
     Right(Eq(Span(source, offset)))
 
+  case '+' =>
+    Right(Plus(Span(source, offset)))
+
   case '-' =>
     val tail = takeWhile(stream, isNumTail).mkString
     if tail.isEmpty
