@@ -1,4 +1,4 @@
-package bananabread
+package challah
 package test
 
 import org.scalatest._
