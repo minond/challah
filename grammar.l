@@ -1,5 +1,9 @@
+top = expr
+    ;
+
 expr = prefix-op primary
      | primary infix-op primary
+     | primary
      ;
 
 primary = "(" expr ")"
@@ -7,6 +11,7 @@ primary = "(" expr ")"
         | val
         | mut
         | def
+        | id
         | num
         | str
         ;

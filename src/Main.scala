@@ -7,7 +7,7 @@ def main(args: Array[String]) =
   val project = Project().withSource("test", """
     val x = 123
     val y = -1777.23
-    val z = 4 - 53
   """)
+    // val z = 4 - 53
 
-  print(parser.tokenize(project.sources.head, project))
+  print(parser.parse(project.sources.head, project))

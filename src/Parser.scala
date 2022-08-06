@@ -5,39 +5,87 @@ import ast._
 import source._
 import utils._
 
+import scala.reflect.ClassTag
+
 
 sealed trait Err
 case class UnknownCharErr(char: Char, span: Span) extends Err
+case class UnexpectedToken[Expected](token: Token) extends Err
+case class UnexpectedEof[Expected](source: Source) extends Err
+
+type CharStream = BufferedIterator[(Char, Int)]
+type TokenStream = BufferedIterator[Token]
+
+
+def parse(source: Source, project: Project): Either[Err, List[Expr]] =
+  tokenize(source, project).flatMap { tokens => parse(tokens.iterator.buffered, project) }
+def parse(tokens: TokenStream, project: Project): Either[Err, List[Expr]] =
+  tokens
+    .map { (curr) => parseTop(curr, tokens, project) }
+    .squished
+
+def parseTop(curr: Token, tokens: TokenStream, project: Project) =
+  parseExpr(curr, tokens, project)
+
+def parseExpr(curr: Token, tokens: TokenStream, project: Project) =
+  parsePrimary(curr, tokens, project)
+
+def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[Err, Expr] = curr match
+  case Id("val", _) =>
+    for
+      name  <- parseId(tokens.next, tokens, project)
+      _     <- eat[Eq](tokens, curr.span.source)
+      value <- parseExpr(tokens.next, tokens, project)
+    yield
+      Val(name, value)
+  case _: Id => parseId(curr, tokens, project)
+  case num: Num =>
+    Right(num)
+  case _ =>
+    println(curr)
+    ???
+
+def parseId(curr: Token, tokens: TokenStream, project: Project): Either[Err, Id] = curr match
+  case id: Id => Right(id)
+  case bad => Left(UnexpectedToken[Id](curr))
+
+def eat[Expected: ClassTag](tokens: TokenStream, source: Source): Either[Err, Expected] = tokens.headOption match
+  case Some(token: Expected) =>
+    tokens.next
+    Right(token)
+  case Some(bad) => Left(UnexpectedToken[Expected](bad))
+  case None => Left(UnexpectedEof(source))
 
 
 def tokenize(source: Source, project: Project): Either[Err, List[Token]] =
-  val stream = project.getContent(source).iterator.zipWithIndex.buffered
-
+  tokenize(project.getContent(source).iterator.zipWithIndex.buffered, source, project)
+def tokenize(stream: CharStream, source: Source, project: Project): Either[Err, List[Token]] =
   stream
     .filter { (c, _) => !c.isWhitespace }
-    .map { (c, i) =>
-      c match
-        case '=' =>
-          Right(Eq(Span(source, i)))
-
-        case '-' =>
-          val tail = takeWhile(stream, isNumTail).mkString
-          if tail.isEmpty
-          then Right(Minus(Span(source, i)))
-          else Right(Num("-" + tail, Span(source, i)))
-
-        case head if isLetter(head) =>
-          val tail = takeWhile(stream, isIdTail).mkString
-          Right(Id(s"$head$tail", Span(source, i)))
-
-        case head if isNumeric(head) =>
-          val tail = takeWhile(stream, isNumeric).mkString
-          Right(Num(s"$head$tail", Span(source, i)))
-
-        case bad =>
-          Left(UnknownCharErr(bad, Span(source, i)))
-    }
+    .map { (char, offset) => nextToken(char, offset, stream, source) }
     .squished
+
+def nextToken(char: Char, offset: Int, stream: CharStream, source: Source): Either[Err, Token] = char match
+  case '=' =>
+    Right(Eq(Span(source, offset)))
+
+  case '-' =>
+    val tail = takeWhile(stream, isNumTail).mkString
+    if tail.isEmpty
+    then Right(Minus(Span(source, offset)))
+    else Right(Num("-" + tail, Span(source, offset)))
+
+  case head if isLetter(head) =>
+    val tail = takeWhile(stream, isIdTail).mkString
+    Right(Id(s"$head$tail", Span(source, offset)))
+
+  case head if isNumeric(head) =>
+    val tail = takeWhile(stream, isNumeric).mkString
+    Right(Num(s"$head$tail", Span(source, offset)))
+
+  case bad =>
+    Left(UnknownCharErr(bad, Span(source, offset)))
+
 
 type Pred[T] = T => Boolean
 type Predcond = (Boolean, Boolean) => Boolean
@@ -61,11 +109,11 @@ val isNumeric = and(ge('0'),
                     le('9'))
 val isNumTail = or(isNumeric,
                    is('.'))
-
 val isIdTail = and(not(isWhitespace),
                    or(isNumeric,
                       isLetter,
                       is('_')))
+
 
 def takeWhile[T](source: BufferedIterator[(T, _)], pred: Pred[T]): List[T] =
   def aux(acc: List[T]): List[T] =

@@ -4,13 +4,16 @@ package ast
 import source.Span
 
 
-sealed trait Token(span: Span)
-case class Id(lexeme: String, span: Span) extends Token(span)
-case class Num(lexeme: String, span: Span) extends Token(span)
-case class OpenParen(span: Span) extends Token(span)
-case class CloseParen(span: Span) extends Token(span)
-case class OpenCurly(span: Span) extends Token(span)
-case class CloseCurly(span: Span) extends Token(span)
-case class Eq(span: Span) extends Token(span)
-case class Plus(span: Span) extends Token(span)
-case class Minus(span: Span) extends Token(span)
+sealed trait Token(val span: Span)
+case class OpenParen(override val span: Span) extends Token(span)
+case class CloseParen(override val span: Span) extends Token(span)
+case class OpenCurly(override val span: Span) extends Token(span)
+case class CloseCurly(override val span: Span) extends Token(span)
+case class Eq(override val span: Span) extends Token(span)
+case class Plus(override val span: Span) extends Token(span)
+case class Minus(override val span: Span) extends Token(span)
+
+sealed trait Expr
+case class Id(lexeme: String, override val span: Span) extends Expr, Token(span)
+case class Num(lexeme: String, override val span: Span) extends Expr, Token(span)
+case class Val(name: Id, value: Expr) extends Expr
