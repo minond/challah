@@ -7,7 +7,7 @@ import utils._
 
 
 sealed trait Err
-case class UnknownTokenErr(span: Span) extends Err
+case class UnknownCharErr(char: Char, span: Span) extends Err
 
 
 def tokenize(source: Source, project: Project): Either[Err, List[Token]] =
@@ -34,12 +34,8 @@ def tokenize(source: Source, project: Project): Either[Err, List[Token]] =
           val tail = takeWhile(stream, isNumeric).mkString
           Right(Num(s"$head$tail", Span(source, i)))
 
-        case x =>
-          println(x)
-          println(x)
-          println(x)
-          println(x)
-          ???
+        case bad =>
+          Left(UnknownCharErr(bad, Span(source, i)))
     }
     .squished
 
