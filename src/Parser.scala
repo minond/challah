@@ -21,7 +21,7 @@ def tokenize(source: Source, project: Project): Either[Err, List[Token]] =
           Right(Eq(Span(source, i)))
 
         case '-' =>
-          val tail = takeWhile(stream, isNumeric).mkString
+          val tail = takeWhile(stream, isNumTail).mkString
           if tail.isEmpty
           then Right(Minus(Span(source, i)))
           else Right(Num("-" + tail, Span(source, i)))
@@ -58,28 +58,18 @@ def not[T <: Char](f: Pred[T]) = flpreds(Seq(f))(_ && !_)
 def and[T <: Char](fs: Pred[T]*) = flpreds(fs)(_ && _)
 def or[T <: Char](fs: Pred[T]*) = flpreds(fs, false)(_ || _)
 
-// val isNewline = oneof('\r', '\n')
 val isWhitespace = oneof(' ', '\t', '\r', '\n', '\f')
 val isLetter = or(and(ge('a'), le('z')),
                   and(ge('A'), le('Z')))
 val isNumeric = and(ge('0'),
                     le('9'))
-// val isNumHead = isNumeric
-// val isNumTail = or(isNumHead,
-//                    is('.'))
+val isNumTail = or(isNumeric,
+                   is('.'))
 
 val isIdTail = and(not(isWhitespace),
                    or(isNumeric,
                       isLetter,
                       is('_')))
-// val isIdHead = isLetter
-//                    not(isNumeric)
-//                    not(isNumeric))
-// val isUnknownTail = and(not(isIdTail),
-//                         not(isWhitespace),
-//                         not(oneof(',', '.', '(', ')', '{', '}', '[', ']')))
-// val isSymbolTail = and(not(isWhitespace),
-//                        not(oneof(',', '(', ')', '{', '}', '[', ']')))
 
 def takeWhile[T](source: BufferedIterator[(T, _)], pred: Pred[T]): List[T] =
   def aux(acc: List[T]): List[T] =
