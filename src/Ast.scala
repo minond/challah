@@ -17,3 +17,7 @@ sealed trait Expr
 case class Id(lexeme: String, override val span: Span) extends Expr, Token(span)
 case class Num(lexeme: String, override val span: Span) extends Expr, Token(span)
 case class Val(name: Id, value: Expr) extends Expr
+case class Binop(lhs: Expr, rhs: Expr, op: BinaryOperator) extends Expr
+
+enum BinaryOperator:
+  case Plus, Minus

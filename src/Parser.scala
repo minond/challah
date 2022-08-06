@@ -35,7 +35,20 @@ def parseTop(curr: Token, tokens: TokenStream, project: Project) = curr match
   case _ => parseExpr(curr, tokens, project)
 
 def parseExpr(curr: Token, tokens: TokenStream, project: Project) =
-  parsePrimary(curr, tokens, project)
+  parsePrimary(curr, tokens, project).flatMap { lhs =>
+    tokens.headOption match
+      case Some(_: Plus) =>
+        tokens.next
+        parsePrimary(tokens.next, tokens, project).map { rhs =>
+          Binop(lhs, rhs, BinaryOperator.Plus)
+        }
+      case Some(_: Minus) =>
+        tokens.next
+        parsePrimary(tokens.next, tokens, project).map { rhs =>
+          Binop(lhs, rhs, BinaryOperator.Minus)
+        }
+      case _ => Right(lhs)
+  }
 
 def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[Err, Expr] = curr match
   case _: Id  => parseId(curr, tokens, project)
