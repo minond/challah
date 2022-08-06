@@ -10,4 +10,8 @@ def main(args: Array[String]) =
     val z = 4 - 53
   """)
 
-  print(parser.parse(project.sources.head, project))
+  for
+    exprs <- parser.parse(project.sources.head, project)
+    expr  <- exprs
+  do
+    println(expr)
