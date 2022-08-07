@@ -11,6 +11,7 @@ expr = prefix-op primary
 
 primary = "(" expr ")"
         | block
+        | app
         | id
         | num
         | str
@@ -18,20 +19,23 @@ primary = "(" expr ")"
 
 block = "{" { expr } "}" ;
 
+app = primary app-args ;
+app-args = "(" [ expr { "," expr } ] ")" ;
+
 val = val-dec "=" expr ;
 val-dec = "val" id [ ":" type ] ;
 mut = mut-dec "=" expr ;
 mut-dec = "mut" id [ ":" type ] ;
 
 def = def-dec "=" expr ;
-def-dec = "def" id def-args ;
-def-args = "(" [ def-arg { "," def-arg } ] ")" ;
+def-dec = "def" id def-params ;
+def-params = "(" [ def-arg { "," def-arg } ] ")" ;
 def-arg = id ":" type ;
 
 type = id
-     | id type-args
+     | id type-params
      ;
-type-args = "[" [type, { "," type }] "]" ;
+type-params = "[" [ type { "," type } ] "]" ;
 
 id = letter , { alphanumeric } ;
 letter = ? all letters ? ;
