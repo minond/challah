@@ -11,8 +11,18 @@ import should._
 
 
 class ParsingTests extends AnyFlatSpec with Matchers:
-  it should "parse valid expressions" in {
-    "val x = 123" should parseAs ("(val x 123)")
-    "val y = -777" should parseAs ("(val y -777)")
-    "val z = 3 + 4" should parseAs ("(val z (+ 3 4))")
+  it should "parse valid val statements" in {
+    val statements = Map(
+      """val num1 = 123""" -> """(val num1 123)""",
+      """val num2 = -777""" -> """(val num2 -777)""",
+      """val num3 = 3 + 4""" -> """(val num3 (+ 3 4))""",
+      """val str1 = """"" -> """(val str1 "")""",
+      """val str2 = "1"""" -> """(val str2 "1")""",
+      """val str3 = "1 2"""" -> """(val str3 "1 2")""",
+      """val str4 = "abc abc abc"""" -> """(val str4 "abc abc abc")""",
+    )
+
+    statements.foreach { (code, result) =>
+      code should parseAs (result)
+    }
   }

@@ -52,16 +52,21 @@ def parseExpr(curr: Token, tokens: TokenStream, project: Project) =
 
 def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[Err, Expr] = curr match
   case _: Id  => parseId(curr, tokens, project)
-  case _: Num => parseNumber(curr, tokens, project)
+  case _: Num => parseNum(curr, tokens, project)
+  case _: Str => parseStr(curr, tokens, project)
   case _      => ???
 
 def parseId(curr: Token, tokens: TokenStream, project: Project): Either[Err, Id] = curr match
   case id: Id => Right(id)
   case bad => Left(UnexpectedToken[Id](curr))
 
-def parseNumber(curr: Token, tokens: TokenStream, project: Project): Either[Err, Num] = curr match
+def parseNum(curr: Token, tokens: TokenStream, project: Project): Either[Err, Num] = curr match
   case num: Num => Right(num)
   case bad => Left(UnexpectedToken[Num](curr))
+
+def parseStr(curr: Token, tokens: TokenStream, project: Project): Either[Err, Str] = curr match
+  case str: Str => Right(str)
+  case bad => Left(UnexpectedToken[Str](curr))
 
 def eat[Expected: ClassTag](tokens: TokenStream, source: Source): Either[Err, Expected] = tokens.headOption match
   case Some(token: Expected) =>
@@ -85,6 +90,10 @@ def nextToken(char: Char, offset: Int, stream: CharStream, source: Source): Eith
 
   case '+' =>
     Right(Plus(Span(source, offset)))
+
+  case '"' =>
+    val lexeme = takeUntil(stream, is('"')).mkString
+    Right(Str(lexeme, Span(source, offset)))
 
   case '-' =>
     val tail = takeWhile(stream, isNumTail).mkString
@@ -141,4 +150,17 @@ def takeWhile[T](source: BufferedIterator[(T, _)], pred: Pred[T]): List[T] =
       if pred(curr._1)
       then aux(acc :+ source.next._1)
       else acc
+  aux(List.empty)
+
+def takeUntil[T](source: BufferedIterator[(T, _)], pred: Pred[T]): List[T] =
+  def aux(acc: List[T]): List[T] =
+    if source.isEmpty
+    then acc
+    else
+      val curr = source.head
+      if pred(curr._1)
+      then
+        source.next
+        acc
+      else aux(acc :+ source.next._1)
   aux(List.empty)

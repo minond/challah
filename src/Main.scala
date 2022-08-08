@@ -8,10 +8,11 @@ def main(args: Array[String]) =
     val x = 123
     val y = -1777.23
     val z = 4 - 53
+    val x = "hi hi 3 2 1"
   """)
 
-  for
-    exprs <- parser.parse(project.sources.head, project)
-    expr  <- exprs
-  do
-    println(expr)
+  parser.parse(project.sources.head, project) match
+    case Left(err) =>
+      println(err)
+    case Right(exprs) =>
+      exprs.foreach { expr => println(expr) }
