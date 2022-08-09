@@ -100,14 +100,18 @@ def takeFromByUntil[T, E, R](
   take: (head: T, stream: BufferedIterator[T]) => Either[E, R],
   by: (head: T) => Boolean,
   until: (head: T) => Boolean,
+  allowTrailing: Boolean = false
 ): Either[E, List[R]] =
   def aux(acc: List[R]): Either[E, List[R]] =
     if until(stream.head) then
       stream.next
       Right(acc)
-    else if by(stream.head) then
+    else if by(stream.head) && allowTrailing then
       stream.next
       aux(acc)
+    else if by(stream.head) then
+      stream.next
+      take(stream.next, stream).flatMap { r => aux(acc :+ r) }
     else
       take(stream.next, stream).flatMap { r => aux(acc :+ r) }
   aux(List.empty)

@@ -6,7 +6,7 @@ import source._
 def main(args: Array[String]) =
   val project = Project()
     .withSource("Test", """
-      module Test (,)
+      module Test (x, y, z)
 
       val x = 123
       val y = -1777.23

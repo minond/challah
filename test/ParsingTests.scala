@@ -15,11 +15,9 @@ class ParsingTests extends AnyFlatSpec with Matchers:
     val statements = Map(
       """module Test""" -> """(module Test ())""",
       """module Test ()""" -> """(module Test ())""",
-      """module Test (,)""" -> """(module Test ())""",
       """module Test (a)""" -> """(module Test (a))""",
       """module Test (a, b, c)""" -> """(module Test (a b c))""",
       """module Test (a,b,c)""" -> """(module Test (a b c))""",
-      """module Test (a,b,c,)""" -> """(module Test (a b c))""",
       """module Test (abc)""" -> """(module Test (abc))""",
       """val num1 = 123""" -> """(val num1 123)""",
       """val num2 = -777""" -> """(val num2 -777)""",
