@@ -1,8 +1,15 @@
-top = expr
+top = module
+    | import
+    | expr
     | val
     | mut
     | def
     ;
+
+module = "module" id [ ids ] ;
+import = "import" id [ ids ] qualified ;
+ids = "(" id qualified { "," id qualified } ")" ;
+qualified = [ "as" id ] ;
 
 expr = prefix-op primary
      | primary infix-op primary

@@ -4,12 +4,15 @@ import source._
 
 
 def main(args: Array[String]) =
-  val project = Project().withSource("test", """
-    val x = 123
-    val y = -1777.23
-    val z = 4 - 53
-    val x = "hi hi 3 2 1"
-  """)
+  val project = Project()
+    .withSource("Test", """
+      module Test (,)
+
+      val x = 123
+      val y = -1777.23
+      val z = 4 - 53
+      val a = "hi hi 3 2 1"
+    """)
 
   parser.parse(project.sources.head, project) match
     case Left(err) =>

@@ -17,37 +17,57 @@ type CharStream = BufferedIterator[(Char, Int)]
 type TokenStream = BufferedIterator[Token]
 
 
-def parse(source: Source, project: Project): Either[Err, List[Expr]] =
+def parse(source: Source, project: Project): Either[Err, List[Stmt]] =
   tokenize(source, project).flatMap { tokens => parse(tokens.iterator.buffered, project) }
-def parse(tokens: TokenStream, project: Project): Either[Err, List[Expr]] =
-  tokens
-    .map { (curr) => parseTop(curr, tokens, project) }
-    .squished
+def parse(tokens: TokenStream, project: Project): Either[Err, List[Stmt]] =
+  tokens.map { (curr) => parseTop(curr, tokens, project) }
+        .squished
 
 def parseTop(curr: Token, tokens: TokenStream, project: Project) = curr match
-  case Id("val", _) =>
-    for
-      name  <- parseId(tokens.next, tokens, project)
-      _     <- eat[Eq](tokens, curr.span.source)
-      value <- parseExpr(tokens.next, tokens, project)
-    yield
-      Val(name, value)
-  case _ => parseExpr(curr, tokens, project)
+  case start @ Id("module", _) => parseModule(start, tokens, project)
+  case start @ Id("val", _)    => parseVal(start, tokens, project)
+  case _                       => parseExpr(curr, tokens, project)
+
+def parseModule(start: Id, tokens: TokenStream, project: Project): Either[Err, Module] =
+  for
+    name <- parseId(tokens.next, tokens, project)
+    ids  <- parseOptionalIds(tokens.headOption, tokens, project)
+  yield
+    Module(name, ids, start.span)
+
+def parseOptionalIds(headOption: Option[Token], tokens: TokenStream, project: Project): Either[Err, List[Id]] = headOption match
+  case Some(OpenParen(_)) =>
+    tokens.next
+    takeFromByUntil(
+      tokens,
+      { (head, stream) => parseId(head, stream, project) },
+      { case Comma(_) => true
+        case _        => false },
+      { case CloseParen(_) => true
+        case _             => false },
+    )
+
+  case _ => Right(List.empty)
+
+def parseVal(start: Id, tokens: TokenStream, project: Project): Either[Err, Val] =
+  for
+    name  <- parseId(tokens.next, tokens, project)
+    _     <- eat[Eq](tokens, start.span.source)
+    value <- parseExpr(tokens.next, tokens, project)
+  yield
+    Val(name, value)
 
 def parseExpr(curr: Token, tokens: TokenStream, project: Project) =
   parsePrimary(curr, tokens, project).flatMap { lhs =>
     tokens.headOption match
-      case Some(_: Plus) =>
-        tokens.next
-        parsePrimary(tokens.next, tokens, project).map { rhs =>
-          Binop(lhs, rhs, BinaryOperator.Plus)
-        }
-      case Some(_: Minus) =>
-        tokens.next
-        parsePrimary(tokens.next, tokens, project).map { rhs =>
-          Binop(lhs, rhs, BinaryOperator.Minus)
-        }
-      case _ => Right(lhs)
+      case Some(_: Plus)  => tokens.next; parseBinop(tokens.next, tokens, project, lhs, BinaryOperator.Plus)
+      case Some(_: Minus) => tokens.next; parseBinop(tokens.next, tokens, project, lhs, BinaryOperator.Minus)
+      case _              => Right(lhs)
+  }
+
+def parseBinop(curr: Token, tokens: TokenStream, project: Project, lhs: Expr, op: BinaryOperator): Either[Err, Binop] =
+  parsePrimary(curr, tokens, project).map { rhs =>
+    Binop(lhs, rhs, op)
   }
 
 def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[Err, Expr] = curr match
@@ -75,6 +95,23 @@ def eat[Expected: ClassTag](tokens: TokenStream, source: Source): Either[Err, Ex
   case Some(bad) => Left(UnexpectedToken[Expected](bad))
   case None => Left(UnexpectedEof(source))
 
+def takeFromByUntil[T, E, R](
+  stream: BufferedIterator[T],
+  take: (head: T, stream: BufferedIterator[T]) => Either[E, R],
+  by: (head: T) => Boolean,
+  until: (head: T) => Boolean,
+): Either[E, List[R]] =
+  def aux(acc: List[R]): Either[E, List[R]] =
+    if until(stream.head) then
+      stream.next
+      Right(acc)
+    else if by(stream.head) then
+      stream.next
+      aux(acc)
+    else
+      take(stream.next, stream).flatMap { r => aux(acc :+ r) }
+  aux(List.empty)
+
 
 def tokenize(source: Source, project: Project): Either[Err, List[Token]] =
   tokenize(project.getContent(source).iterator.zipWithIndex.buffered, source, project)
@@ -85,11 +122,11 @@ def tokenize(stream: CharStream, source: Source, project: Project): Either[Err, 
     .squished
 
 def nextToken(char: Char, offset: Int, stream: CharStream, source: Source): Either[Err, Token] = char match
-  case '=' =>
-    Right(Eq(Span(source, offset)))
-
-  case '+' =>
-    Right(Plus(Span(source, offset)))
+  case '(' => Right(OpenParen(Span(source, offset)))
+  case ')' => Right(CloseParen(Span(source, offset)))
+  case ',' => Right(Comma(Span(source, offset)))
+  case '=' => Right(Eq(Span(source, offset)))
+  case '+' => Right(Plus(Span(source, offset)))
 
   case '"' =>
     val lexeme = takeUntil(stream, is('"')).mkString
