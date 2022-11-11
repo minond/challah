@@ -23,8 +23,8 @@ sealed trait Expr extends Stmt
 case class Id(lexeme: String, override val span: Span) extends Expr, Token(span), Print(lexeme)
 case class Num(lexeme: String, override val span: Span) extends Expr, Token(span), Print(lexeme)
 case class Str(lexeme: String, override val span: Span) extends Expr, Token(span), Print(s""""$lexeme"""")
-case class Binop(lhs: Expr, rhs: Expr, op: BinaryOperator) extends Expr, Print(s"($op $lhs $rhs)")
-case class Uniop(rhs: Expr, op: UnaryOperator) extends Expr, Print(s"($op $rhs)")
+case class Binop(op: BinaryOperator, lhs: Expr, rhs: Expr) extends Expr, Print(s"($op $lhs $rhs)")
+case class Uniop(op: UnaryOperator, rhs: Expr) extends Expr, Print(s"($op $rhs)")
 
 enum UnaryOperator:
   case Minus extends UnaryOperator, Print("-")

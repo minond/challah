@@ -65,12 +65,12 @@ def parseExpr(curr: Token, tokens: TokenStream, project: Project) = curr match
 
 def parseBinop(curr: Token, tokens: TokenStream, project: Project, lhs: Expr, op: BinaryOperator): Either[SyntaxErr, Binop] =
   parseExpr(curr, tokens, project).map { rhs =>
-    Binop(lhs, rhs, op)
+    Binop(op, lhs, rhs)
   }
 
 def parseUniop(curr: Token, tokens: TokenStream, project: Project, op: UnaryOperator): Either[SyntaxErr, Uniop] =
   parseExpr(curr, tokens, project).map { rhs =>
-    Uniop(rhs, op)
+    Uniop(op, rhs)
   }
 
 def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[SyntaxErr, Expr] = curr match
