@@ -11,7 +11,11 @@ def main(args: Array[String]) =
       val x = 123
       val y = -1777.23
       val z = 4 - 53
+
       val a = "hi hi 3 2 1"
+      val b = x + y
+      val c = -b
+      val d = ----c
 
     """)
 

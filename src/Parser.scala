@@ -53,24 +53,31 @@ def parseVal(start: Id, tokens: TokenStream, project: Project): Either[SyntaxErr
   yield
     Val(name, value)
 
-def parseExpr(curr: Token, tokens: TokenStream, project: Project) =
-  parsePrimary(curr, tokens, project).flatMap { lhs =>
-    tokens.headOption match
-      case Some(_: Plus)  => tokens.next; parseBinop(tokens.next, tokens, project, lhs, BinaryOperator.Plus)
-      case Some(_: Minus) => tokens.next; parseBinop(tokens.next, tokens, project, lhs, BinaryOperator.Minus)
-      case _              => Right(lhs)
-  }
+def parseExpr(curr: Token, tokens: TokenStream, project: Project) = curr match
+  case _: Minus => parseUniop(tokens.next, tokens, project, UnaryOperator.Minus)
+  case _ =>
+    parsePrimary(curr, tokens, project).flatMap { lhs =>
+      tokens.headOption match
+        case Some(_: Plus)  => tokens.next; parseBinop(tokens.next, tokens, project, lhs, BinaryOperator.Plus)
+        case Some(_: Minus) => tokens.next; parseBinop(tokens.next, tokens, project, lhs, BinaryOperator.Minus)
+        case _              => Right(lhs)
+    }
 
 def parseBinop(curr: Token, tokens: TokenStream, project: Project, lhs: Expr, op: BinaryOperator): Either[SyntaxErr, Binop] =
-  parsePrimary(curr, tokens, project).map { rhs =>
+  parseExpr(curr, tokens, project).map { rhs =>
     Binop(lhs, rhs, op)
   }
 
+def parseUniop(curr: Token, tokens: TokenStream, project: Project, op: UnaryOperator): Either[SyntaxErr, Uniop] =
+  parseExpr(curr, tokens, project).map { rhs =>
+    Uniop(rhs, op)
+  }
+
 def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[SyntaxErr, Expr] = curr match
-  case _: Id  => parseId(curr, tokens, project)
-  case _: Num => parseNum(curr, tokens, project)
-  case _: Str => parseStr(curr, tokens, project)
-  case _      => ???
+  case _: Id    => parseId(curr, tokens, project)
+  case _: Num   => parseNum(curr, tokens, project)
+  case _: Str   => parseStr(curr, tokens, project)
+  case _        => throw Exception(s"curr = ${curr}")
 
 def parseId(curr: Token, tokens: TokenStream, project: Project): Either[SyntaxErr, Id] = curr match
   case id: Id => Right(id)
@@ -127,23 +134,18 @@ def nextToken(char: Char, offset: Int, stream: CharStream, source: Source): Eith
   case ',' => Right(Comma(Span(source, offset)))
   case '=' => Right(Eq(Span(source, offset)))
   case '+' => Right(Plus(Span(source, offset)))
+  case '-' => Right(Minus(Span(source, offset)))
 
   case '"' =>
     val lexeme = takeUntil(stream, is('"')).mkString
     Right(Str(lexeme, Span(source, offset)))
-
-  case '-' =>
-    val tail = takeWhile(stream, isNumTail).mkString
-    if tail.isEmpty
-    then Right(Minus(Span(source, offset)))
-    else Right(Num("-" + tail, Span(source, offset)))
 
   case head if isLetter(head) =>
     val tail = takeWhile(stream, isIdTail).mkString
     Right(Id(s"$head$tail", Span(source, offset)))
 
   case head if isNumeric(head) =>
-    val tail = takeWhile(stream, isNumeric).mkString
+    val tail = takeWhile(stream, isNumTail).mkString
     Right(Num(s"$head$tail", Span(source, offset)))
 
   case bad =>
