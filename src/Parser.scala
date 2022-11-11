@@ -2,24 +2,20 @@ package challah
 package parser
 
 import ast._
-import source._
-import utils._
+import err.{SyntaxErr, UnknownCharErr, UnexpectedToken, UnexpectedEof}
+import source.{Project, Span, Source}
+import utils.squished
 
 import scala.reflect.ClassTag
 
-
-sealed trait Err
-case class UnknownCharErr(char: Char, span: Span) extends Err
-case class UnexpectedToken[Expected](token: Token) extends Err
-case class UnexpectedEof[Expected](source: Source) extends Err
 
 type CharStream = BufferedIterator[(Char, Int)]
 type TokenStream = BufferedIterator[Token]
 
 
-def parse(source: Source, project: Project): Either[Err, List[Stmt]] =
+def parse(source: Source, project: Project): Either[SyntaxErr, List[Stmt]] =
   tokenize(source, project).flatMap { tokens => parse(tokens.iterator.buffered, project) }
-def parse(tokens: TokenStream, project: Project): Either[Err, List[Stmt]] =
+def parse(tokens: TokenStream, project: Project): Either[SyntaxErr, List[Stmt]] =
   tokens.map { (curr) => parseTop(curr, tokens, project) }
         .squished
 
@@ -28,14 +24,14 @@ def parseTop(curr: Token, tokens: TokenStream, project: Project) = curr match
   case start @ Id("val", _)    => parseVal(start, tokens, project)
   case _                       => parseExpr(curr, tokens, project)
 
-def parseModule(start: Id, tokens: TokenStream, project: Project): Either[Err, Module] =
+def parseModule(start: Id, tokens: TokenStream, project: Project): Either[SyntaxErr, Module] =
   for
     name <- parseId(tokens.next, tokens, project)
     ids  <- parseOptionalIds(tokens.headOption, tokens, project)
   yield
     Module(name, ids, start.span)
 
-def parseOptionalIds(headOption: Option[Token], tokens: TokenStream, project: Project): Either[Err, List[Id]] = headOption match
+def parseOptionalIds(headOption: Option[Token], tokens: TokenStream, project: Project): Either[SyntaxErr, List[Id]] = headOption match
   case Some(OpenParen(_)) =>
     tokens.next
     takeFromByUntil(
@@ -49,7 +45,7 @@ def parseOptionalIds(headOption: Option[Token], tokens: TokenStream, project: Pr
 
   case _ => Right(List.empty)
 
-def parseVal(start: Id, tokens: TokenStream, project: Project): Either[Err, Val] =
+def parseVal(start: Id, tokens: TokenStream, project: Project): Either[SyntaxErr, Val] =
   for
     name  <- parseId(tokens.next, tokens, project)
     _     <- eat[Eq](tokens, start.span.source)
@@ -65,30 +61,30 @@ def parseExpr(curr: Token, tokens: TokenStream, project: Project) =
       case _              => Right(lhs)
   }
 
-def parseBinop(curr: Token, tokens: TokenStream, project: Project, lhs: Expr, op: BinaryOperator): Either[Err, Binop] =
+def parseBinop(curr: Token, tokens: TokenStream, project: Project, lhs: Expr, op: BinaryOperator): Either[SyntaxErr, Binop] =
   parsePrimary(curr, tokens, project).map { rhs =>
     Binop(lhs, rhs, op)
   }
 
-def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[Err, Expr] = curr match
+def parsePrimary(curr: Token, tokens: TokenStream, project: Project): Either[SyntaxErr, Expr] = curr match
   case _: Id  => parseId(curr, tokens, project)
   case _: Num => parseNum(curr, tokens, project)
   case _: Str => parseStr(curr, tokens, project)
   case _      => ???
 
-def parseId(curr: Token, tokens: TokenStream, project: Project): Either[Err, Id] = curr match
+def parseId(curr: Token, tokens: TokenStream, project: Project): Either[SyntaxErr, Id] = curr match
   case id: Id => Right(id)
   case bad => Left(UnexpectedToken[Id](curr))
 
-def parseNum(curr: Token, tokens: TokenStream, project: Project): Either[Err, Num] = curr match
+def parseNum(curr: Token, tokens: TokenStream, project: Project): Either[SyntaxErr, Num] = curr match
   case num: Num => Right(num)
   case bad => Left(UnexpectedToken[Num](curr))
 
-def parseStr(curr: Token, tokens: TokenStream, project: Project): Either[Err, Str] = curr match
+def parseStr(curr: Token, tokens: TokenStream, project: Project): Either[SyntaxErr, Str] = curr match
   case str: Str => Right(str)
   case bad => Left(UnexpectedToken[Str](curr))
 
-def eat[Expected: ClassTag](tokens: TokenStream, source: Source): Either[Err, Expected] = tokens.headOption match
+def eat[Expected: ClassTag](tokens: TokenStream, source: Source): Either[SyntaxErr, Expected] = tokens.headOption match
   case Some(token: Expected) =>
     tokens.next
     Right(token)
@@ -117,15 +113,15 @@ def takeFromByUntil[T, E, R](
   aux(List.empty)
 
 
-def tokenize(source: Source, project: Project): Either[Err, List[Token]] =
+def tokenize(source: Source, project: Project): Either[SyntaxErr, List[Token]] =
   tokenize(project.getContent(source).iterator.zipWithIndex.buffered, source, project)
-def tokenize(stream: CharStream, source: Source, project: Project): Either[Err, List[Token]] =
+def tokenize(stream: CharStream, source: Source, project: Project): Either[SyntaxErr, List[Token]] =
   stream
     .filter { (c, _) => !c.isWhitespace }
     .map { (char, offset) => nextToken(char, offset, stream, source) }
     .squished
 
-def nextToken(char: Char, offset: Int, stream: CharStream, source: Source): Either[Err, Token] = char match
+def nextToken(char: Char, offset: Int, stream: CharStream, source: Source): Either[SyntaxErr, Token] = char match
   case '(' => Right(OpenParen(Span(source, offset)))
   case ')' => Right(CloseParen(Span(source, offset)))
   case ',' => Right(Comma(Span(source, offset)))

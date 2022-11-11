@@ -12,6 +12,7 @@ def main(args: Array[String]) =
       val y = -1777.23
       val z = 4 - 53
       val a = "hi hi 3 2 1"
+
     """)
 
   parser.parse(project.sources.head, project) match
