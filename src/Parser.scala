@@ -63,11 +63,11 @@ def parseExpr(curr: Token, tokens: TokenStream, project: Project) = curr match
         case _              => Right(lhs)
     }
 
-def parseBinop(curr: Token, tokens: TokenStream, project: Project, lhs: Expr, op: BinaryOperator): Either[SyntaxErr, Expr] =
+def parseBinop(curr: Token, tokens: TokenStream, project: Project, lhs: Expr, op: BinaryOperator): Either[SyntaxErr, Binop] =
   parseExpr(curr, tokens, project).map { rhs => structureBinop(op, lhs, rhs) }
 
-def structureBinop(op: BinaryOperator, lhs: Expr, rhs: Expr): Expr = rhs match
-  case Binop(rhsOp, rhsLhs, rhsRhs) => Binop(op, structureBinop(rhsOp, lhs, rhsLhs), rhsRhs)
+def structureBinop(op: BinaryOperator, lhs: Expr, rhs: Expr): Binop = rhs match
+  case Binop(rhsOp, rhsLhs, rhsRhs) => Binop(rhsOp, structureBinop(op, lhs, rhsLhs), rhsRhs)
   case _ => Binop(op, lhs, rhs)
 
 def parseUniop(curr: Token, tokens: TokenStream, project: Project, op: UnaryOperator): Either[SyntaxErr, Uniop] =
