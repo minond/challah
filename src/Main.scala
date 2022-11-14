@@ -16,6 +16,8 @@ def main(args: Array[String]) =
       val b = x + y
       val c = -b
       val d = ----c
+      val e = x + y + z + 1
+      val f = "1" + "2" + "3" + "4"
 
     """)
 
