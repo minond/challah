@@ -1,5 +1,7 @@
 module Test2 (a, b, c, d, e, f, g)
 
+import Test1
+
 val a = "hi hi 3 2 1"
 val b = x + y
 val c = -b
