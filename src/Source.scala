@@ -1,21 +1,29 @@
 package challah
 package source
 
-import ast.{Stmt, Module}
+import ast.{Module, Import, Stmt}
 
 
 case class Source(name: String, id: Int)
 case class Span(source: Source, offset: Int)
 
-case class Tree(stmts: List[Stmt], module: Option[Module], imports: List[_])
+case class Tree(module: Option[Module], imports: List[Import], statements: List[Stmt]):
+  override def toString(): String =
+    s"""
+     |${module.getOrElse("")}
+     |
+     |${imports.mkString("\n")}
+     |
+     |${statements.mkString("\n")}
+    """.trim.stripMargin('|')
+
 object Tree:
   def load(xs: List[Stmt]): Tree =
-    val (stmts, module) = xs.foldLeft[(List[Stmt], Option[Module])]((List.empty, None)) {
-      case ((stmts, module), stmt) => stmt match
-        case module: Module =>
-          (stmts, Some(module))
-        case _ =>
-          (stmts :+ stmt, module)
+    val (module, imports, statements) = xs.foldLeft[(Option[Module], List[Import], List[Stmt])]((None, List.empty, List.empty)) {
+      case ((module, imports, statements), stmt) => stmt match
+        case mod: Module => (Some(mod), imports, statements)
+        case imp: Import => (module, imports :+ imp, statements)
+        case _ => (module, imports, statements :+ stmt)
     }
 
-    Tree(stmts, module, List.empty)
+    Tree(module, imports, statements)

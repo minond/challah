@@ -17,6 +17,7 @@ case class Minus(override val span: Span) extends Token(span)
 
 sealed trait Stmt
 case class Module(name: Id, symbols: List[Id], span: Span) extends Stmt, Print(s"(module $name (${symbols.mkString(" ")}))")
+case class Import(name: Id, symbols: List[Id], span: Span) extends Stmt, Print(s"(import $name (${symbols.mkString(" ")}))")
 case class Val(name: Id, value: Expr) extends Stmt, Print(s"(val $name $value)")
 
 sealed trait Expr extends Stmt

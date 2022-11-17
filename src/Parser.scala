@@ -22,6 +22,7 @@ def parse(tokens: TokenStream, project: Project): Either[SyntaxErr, List[Stmt]] 
 
 def parseTop(curr: Token, tokens: TokenStream, project: Project) = curr match
   case start @ Id("module", _) => parseModule(start, tokens, project)
+  case start @ Id("import", _) => parseImport(start, tokens, project)
   case start @ Id("val", _)    => parseVal(start, tokens, project)
   case _                       => parseExpr(curr, tokens, project)
 
@@ -31,6 +32,13 @@ def parseModule(start: Id, tokens: TokenStream, project: Project): Either[Syntax
     ids  <- parseOptionalIds(tokens.headOption, tokens, project)
   yield
     Module(name, ids, start.span)
+
+def parseImport(start: Id, tokens: TokenStream, project: Project): Either[SyntaxErr, Import] =
+  for
+    name <- parseId(tokens.next, tokens, project)
+    ids  <- parseOptionalIds(tokens.headOption, tokens, project)
+  yield
+    Import(name, ids, start.span)
 
 def parseOptionalIds(headOption: Option[Token], tokens: TokenStream, project: Project): Either[SyntaxErr, List[Id]] = headOption match
   case Some(OpenParen(_)) =>
