@@ -1,6 +1,6 @@
 package challah
 
-import source._
+import project.Project
 
 
 def main(args: Array[String]) =

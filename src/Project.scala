@@ -1,7 +1,8 @@
 package challah
-package source
+package project
 
 import ast.Stmt
+import source.Source
 import parser.parse
 import err.Err
 
@@ -40,7 +41,3 @@ class Project():
       case Right(stmts) =>
         sourceAstMap.addOne(source.id, stmts)
         None
-
-
-case class Source(name: String, id: Int)
-case class Span(source: Source, offset: Int)

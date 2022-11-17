@@ -3,7 +3,8 @@ package parser
 
 import ast._
 import err.{SyntaxErr, UnknownCharErr, UnexpectedToken, UnexpectedEof}
-import source.{Project, Span, Source}
+import project.Project
+import source.{Span, Source}
 import utils.squished
 
 import scala.reflect.ClassTag
