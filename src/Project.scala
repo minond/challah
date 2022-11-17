@@ -2,7 +2,7 @@ package challah
 package project
 
 import ast.Stmt
-import source.Source
+import source.{Source, Tree}
 import parser.parse
 import err.Err
 
@@ -15,7 +15,7 @@ val sourceContentIds = LazyList.from(1).sliding(1)
 class Project():
   private val sources: ArrayBuffer[Source] = ArrayBuffer.empty
   private val sourceContentMap: MMap[Int, String] = MMap.empty
-  private val sourceAstMap: MMap[Int, List[Stmt]] = MMap.empty
+  private val sourceAstMap: MMap[Int, Tree] = MMap.empty
 
   def withFile(path: String) =
     val content = fromFile(path).getLines.toList.mkString("\n")
@@ -39,5 +39,5 @@ class Project():
       case Left(err) =>
         Some(err)
       case Right(stmts) =>
-        sourceAstMap.addOne(source.id, stmts)
+        sourceAstMap.addOne(source.id, Tree.load(stmts))
         None
