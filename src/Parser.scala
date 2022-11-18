@@ -4,7 +4,7 @@ package parser
 import ast._
 import err.{SyntaxErr, UnknownCharErr, UnexpectedToken, UnexpectedEof}
 import project.Project
-import source.{Span, Source}
+import source.{Span, SourceMapping}
 import utils.squished
 
 import scala.reflect.ClassTag
@@ -14,7 +14,7 @@ type CharStream = BufferedIterator[(Char, Int)]
 type TokenStream = BufferedIterator[Token]
 
 
-def parse(source: Source, project: Project): Either[SyntaxErr, List[Stmt]] =
+def parse(source: SourceMapping, project: Project): Either[SyntaxErr, List[Stmt]] =
   tokenize(source, project).flatMap { tokens => parse(tokens.iterator.buffered, project) }
 def parse(tokens: TokenStream, project: Project): Either[SyntaxErr, List[Stmt]] =
   tokens.map { (curr) => parseTop(curr, tokens, project) }
@@ -57,7 +57,7 @@ def parseOptionalIds(headOption: Option[Token], tokens: TokenStream, project: Pr
 def parseVal(start: Id, tokens: TokenStream, project: Project): Either[SyntaxErr, Val] =
   for
     name  <- parseId(tokens.next, tokens, project)
-    _     <- eat[Eq](tokens, start.span.source)
+    _     <- eat[Eq](tokens, start.span.sourceMapping)
     value <- parseExpr(tokens.next, tokens, project)
   yield
     Val(name, value)
@@ -102,7 +102,7 @@ def parseStr(curr: Token, tokens: TokenStream, project: Project): Either[SyntaxE
   case str: Str => Right(str)
   case bad => Left(UnexpectedToken[Str](curr))
 
-def eat[Expected: ClassTag](tokens: TokenStream, source: Source): Either[SyntaxErr, Expected] = tokens.headOption match
+def eat[Expected: ClassTag](tokens: TokenStream, source: SourceMapping): Either[SyntaxErr, Expected] = tokens.headOption match
   case Some(token: Expected) =>
     tokens.next
     Right(token)
@@ -131,15 +131,15 @@ def takeFromByUntil[T, E, R](
   aux(List.empty)
 
 
-def tokenize(source: Source, project: Project): Either[SyntaxErr, List[Token]] =
+def tokenize(source: SourceMapping, project: Project): Either[SyntaxErr, List[Token]] =
   tokenize(project.getContent(source).iterator.zipWithIndex.buffered, source, project)
-def tokenize(stream: CharStream, source: Source, project: Project): Either[SyntaxErr, List[Token]] =
+def tokenize(stream: CharStream, source: SourceMapping, project: Project): Either[SyntaxErr, List[Token]] =
   stream
     .filter { (c, _) => !c.isWhitespace }
     .map { (char, offset) => nextToken(char, offset, stream, source) }
     .squished
 
-def nextToken(char: Char, offset: Int, stream: CharStream, source: Source): Either[SyntaxErr, Token] = char match
+def nextToken(char: Char, offset: Int, stream: CharStream, source: SourceMapping): Either[SyntaxErr, Token] = char match
   case '(' => Right(OpenParen(Span(source, offset)))
   case ')' => Right(CloseParen(Span(source, offset)))
   case ',' => Right(Comma(Span(source, offset)))
