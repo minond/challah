@@ -2,7 +2,7 @@ package challah
 package project
 
 import ast.Stmt
-import source.{SourceMapping, Source}
+import source.{SourceMapping, SourceId, Source}
 import parser.parse
 import err.Err
 
@@ -10,12 +10,10 @@ import scala.io.Source.fromFile
 import scala.collection.mutable.{ArrayBuffer, Map => MMap, Set => MSet}
 
 
-val sourceMappingContentIds = LazyList.from(1).sliding(1)
-
 class Project():
   private val sourceMappings: ArrayBuffer[SourceMapping] = ArrayBuffer.empty
-  private val sourceMappingContentMap = MMap.empty[Int, String]
-  private val sourceMappingAstMap = MMap.empty[Int, Source]
+  private val sourceMappingContentMap = MMap.empty[SourceId, String]
+  private val sourceMappingAstMap = MMap.empty[SourceId, Source]
   private val loadedFiles = MSet.empty[String]
 
   def withModule(name: String) =
@@ -29,10 +27,9 @@ class Project():
     this
 
   def withSource(name: String, content: String) =
-    val id = sourceMappingContentIds.next.head
-    val sourceMapping = SourceMapping(name, id)
+    val sourceMapping = SourceMapping(name)
     sourceMappings += sourceMapping
-    sourceMappingContentMap.addOne((id, content))
+    sourceMappingContentMap.addOne((sourceMapping.id, content))
     load(sourceMapping)
     this
 
@@ -48,6 +45,9 @@ class Project():
         sourceMappingAstMap.addOne(sourceMapping.id, tree)
         tree.imports.foreach { imp => withModule(imp.name.lexeme) }
         None
+
+  def entrySource =
+    sourceMappingAstMap.get(sourceMappings.head.id).getOrElse(???)
 
   override def toString(): String =
     sourceMappingAstMap.mkString("\n\n\n")

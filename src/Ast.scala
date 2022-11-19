@@ -2,7 +2,7 @@ package challah
 package ast
 
 import source.Span
-import utils.Print
+import utils.{Print, ids}
 
 
 sealed trait Token(val span: Span)
@@ -18,7 +18,8 @@ case class Minus(override val span: Span) extends Token(span)
 sealed trait Stmt
 case class Module(name: Id, symbols: List[Id], span: Span) extends Stmt, Print(s"(module $name (${symbols.mkString(" ")}))")
 case class Import(name: Id, symbols: List[Id], span: Span) extends Stmt, Print(s"(import $name (${symbols.mkString(" ")}))")
-case class Val(name: Id, value: Expr) extends Stmt, Print(s"(val $name $value)")
+case class Val(name: Id, value: Expr) extends Stmt, Print(s"(val $name $value)"):
+  val id = DefinitionId()
 
 sealed trait Expr extends Stmt
 case class Id(lexeme: String, override val span: Span) extends Expr, Token(span), Print(lexeme)
@@ -33,3 +34,8 @@ enum UnaryOperator:
 enum BinaryOperator:
   case Plus extends BinaryOperator, Print("+")
   case Minus extends BinaryOperator, Print("-")
+
+
+case class DefinitionId():
+  val value = ids.next.head
+  override def toString: String = s"id#${value}"

@@ -2,6 +2,9 @@ package challah
 package utils
 
 
+val ids = LazyList.from(1).sliding(1)
+
+
 trait Print(value: String) {
   override def toString = value
 }

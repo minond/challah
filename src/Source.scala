@@ -2,12 +2,18 @@ package challah
 package source
 
 import ast.{Module, Import, Stmt}
+import utils.ids
 
+case class SourceId():
+  val value = ids.next.head
+  override def toString: String = s"source#${value}"
+
+case class SourceMapping(name: String):
+  val id = SourceId()
 
 case class Span(sourceMapping: SourceMapping, offset: Int)
-case class SourceMapping(name: String, id: Int)
 
-case class Source(module: Option[Module], imports: List[Import], statements: List[Stmt]):
+case class Source(module: Option[Module], imports: List[Import], val statements: List[Stmt]):
   override def toString(): String =
     s"""
      |${module.getOrElse("")}
