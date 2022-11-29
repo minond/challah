@@ -1,7 +1,6 @@
 package challah
 package source
 
-import ast.{Module, Import, Stmt}
 import utils.ids
 
 case class SourceId():
@@ -13,7 +12,7 @@ case class SourceMapping(name: String):
 
 case class Span(sourceMapping: SourceMapping, offset: Int)
 
-case class Source(module: Option[Module], imports: List[Import], val statements: List[Stmt]):
+case class Source(module: Option[ast.Module], imports: List[ast.Import], val statements: List[ast.Node]):
   override def toString(): String =
     s"""
      |${module.getOrElse("")}
@@ -24,11 +23,11 @@ case class Source(module: Option[Module], imports: List[Import], val statements:
     """.trim.stripMargin('|')
 
 object Source:
-  def load(xs: List[Stmt]): Source =
-    val (module, imports, statements) = xs.foldLeft[(Option[Module], List[Import], List[Stmt])]((None, List.empty, List.empty)) {
+  def load(xs: List[ast.Node]): Source =
+    val (module, imports, statements) = xs.foldLeft[(Option[ast.Module], List[ast.Import], List[ast.Node])]((None, List.empty, List.empty)) {
       case ((module, imports, statements), stmt) => stmt match
-        case mod: Module => (Some(mod), imports, statements)
-        case imp: Import => (module, imports :+ imp, statements)
+        case mod: ast.Module => (Some(mod), imports, statements)
+        case imp: ast.Import => (module, imports :+ imp, statements)
         case _ => (module, imports, statements :+ stmt)
     }
 

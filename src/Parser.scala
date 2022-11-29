@@ -2,7 +2,7 @@ package challah
 package parser
 
 import ast._
-import err.{SyntaxErr, UnknownCharErr, UnexpectedToken, UnexpectedEof}
+import err._
 import project.Project
 import source.{Span, SourceMapping}
 import utils.squished
@@ -14,9 +14,9 @@ type CharStream = BufferedIterator[(Char, Int)]
 type TokenStream = BufferedIterator[Token]
 
 
-def parse(source: SourceMapping, project: Project): Either[SyntaxErr, List[Stmt]] =
+def parse(source: SourceMapping, project: Project): Either[SyntaxErr, List[Node]] =
   tokenize(source, project).flatMap { tokens => parse(tokens.iterator.buffered, project) }
-def parse(tokens: TokenStream, project: Project): Either[SyntaxErr, List[Stmt]] =
+def parse(tokens: TokenStream, project: Project): Either[SyntaxErr, List[Node]] =
   tokens.map { (curr) => parseTop(curr, tokens, project) }
         .squished
 
@@ -63,12 +63,23 @@ def parseVal(start: Id, tokens: TokenStream, project: Project): Either[SyntaxErr
     Val(name, value)
 
 def parseExpr(curr: Token, tokens: TokenStream, project: Project) = curr match
-  case _: Minus => parseUniop(tokens.next, tokens, project, UnaryOperator.Minus)
+  case _: Minus =>
+    val token = tokens.next
+    val id = Id("-", token.span)
+    parseUniop(token, tokens, project, UnaryOperator.Minus(id))
   case _ =>
     parsePrimary(curr, tokens, project).flatMap { lhs =>
       tokens.headOption match
-        case Some(_: Plus)  => tokens.next; parseBinop(tokens.next, tokens, project, lhs, BinaryOperator.Plus)
-        case Some(_: Minus) => tokens.next; parseBinop(tokens.next, tokens, project, lhs, BinaryOperator.Minus)
+        case Some(_: Plus) =>
+          tokens.next
+          val token = tokens.next
+          val id = Id("-", token.span)
+          parseBinop(token, tokens, project, lhs, BinaryOperator.Plus(id))
+        case Some(_: Minus) =>
+          tokens.next
+          val token = tokens.next
+          val id = Id("-", token.span)
+          parseBinop(token, tokens, project, lhs, BinaryOperator.Minus(id))
         case _              => Right(lhs)
     }
 
