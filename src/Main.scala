@@ -5,7 +5,7 @@ import ir.linked
 
 
 def main(args: Array[String]) =
-  val project = Project().withFile("examples/Test1.ch")
+  val project = Project().withFile("examples/test1.ch")
   println(project.entrySource)
   for stmt <- project.entrySource.statements do
     println(linked.transform(stmt))
