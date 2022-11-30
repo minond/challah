@@ -2,7 +2,8 @@ package challah
 package project
 
 import ast.Stmt
-import source.{SourceMapping, SourceId, Source}
+import source.{SourceMapping, SourceId}
+import module.Module
 import parser.parse
 import err.Err
 
@@ -13,7 +14,7 @@ import scala.collection.mutable.{ArrayBuffer, Map => MMap, Set => MSet}
 class Project():
   private val sourceMappings: ArrayBuffer[SourceMapping] = ArrayBuffer.empty
   private val sourceMappingContentMap = MMap.empty[SourceId, String]
-  private val sourceMappingAstMap = MMap.empty[SourceId, Source]
+  private val modules = MSet.empty[Module]
   private val loadedFiles = MSet.empty[String]
 
   def withModule(name: String) =
@@ -41,13 +42,10 @@ class Project():
       case Left(err) =>
         Some(err)
       case Right(stmts) =>
-        val tree = Source.load(stmts)
-        sourceMappingAstMap.addOne(sourceMapping.id, tree)
-        tree.imports.foreach { imp => withModule(imp.name.lexeme) }
+        val mod = Module.fromSource(stmts)
+        modules.addOne(mod)
+        mod.source.imports.foreach { imp => withModule(imp.name.lexeme) }
         None
 
-  def entrySource =
-    sourceMappingAstMap.get(sourceMappings.head.id).getOrElse(???)
-
-  override def toString(): String =
-    sourceMappingAstMap.mkString("\n\n\n")
+  def findModule(name: String): Option[Module] =
+    modules.find { case mod => mod.name == name }
