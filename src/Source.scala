@@ -12,7 +12,15 @@ case class SourceMapping(name: String):
 
 case class Span(sourceMapping: SourceMapping, offset: Int)
 
-class Source(val module: Option[ast.Module], val imports: List[ast.Import], val statements: List[ast.Node])
+class Source(val module: Option[ast.Module], val imports: List[ast.Import], val statements: List[ast.Node]):
+  override def toString(): String =
+    s"""
+     |${module.getOrElse("")}
+     |
+     |${imports.mkString("\n")}
+     |
+     |${statements.mkString("\n")}
+    """.trim.stripMargin('|')
 
 object Source:
   def load(nodes: List[ast.Node]) =

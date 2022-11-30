@@ -6,14 +6,7 @@ import ir.linked
 import source.Source
 
 class Module(val source: Source):
-  override def toString(): String =
-    s"""
-     |${source.module.getOrElse("")}
-     |
-     |${source.imports.mkString("\n")}
-     |
-     |${source.statements.mkString("\n")}
-    """.trim.stripMargin('|')
+  override def toString(): String = source.toString
 
   lazy val name = source.module
     .map({ node => node.name.lexeme })
